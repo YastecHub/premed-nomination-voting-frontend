@@ -1,0 +1,238 @@
+/* ─── Google Fonts — must be first ─────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design Tokens ────────────────────────────────────────────────────── */
+:root {
+  --navy-950: #05080f;
+  --navy-900: #0a0f1e;
+  --navy-800: #0d1529;
+  --gold-400: #fbbf24;
+  --gold-500: #f59e0b;
+  --indigo-500: #6366f1;
+  --teal-500: #14b8a6;
+}
+
+/* ─── Base Reset ────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--navy-950);
+  color: #f1f5f9;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar Styling ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1529;
+}
+::-webkit-scrollbar-thumb {
+  background: #6366f1;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #818cf8;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 #0d1529;
+}
+
+/* ─── Glass Card ────────────────────────────────────────────────────────── */
+@layer components {
+  .glass-card {
+    @apply bg-navy-800/60 backdrop-blur-md border border-white/10 rounded-2xl;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300;
+  }
+  .glass-card-hover:hover {
+    @apply border-indigo-500/40;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* ─── Buttons ─────────────────────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(99,102,241,0.5);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  .btn-primary:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #0a0f1e;
+    box-shadow: 0 4px 15px rgba(251,191,36,0.3);
+  }
+  .btn-gold:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(251,191,36,0.5);
+  }
+  .btn-gold:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    transform: none;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-rose-400 hover:text-white hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/40 transition-all duration-200 cursor-pointer;
+  }
+
+  .btn-success {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-emerald-400 hover:text-white hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-200 cursor-pointer;
+  }
+
+  /* ─── Input ─────────────────────────────────────────────────────────── */
+  .input-field {
+    @apply w-full bg-navy-800/80 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 transition-all duration-200 outline-none text-sm;
+  }
+  .input-field:focus {
+    @apply border-indigo-500/60;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+  }
+
+  /* ─── Badge ─────────────────────────────────────────────────────────── */
+  .badge-award {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+    background: rgba(251,191,36,0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.3);
+  }
+  .badge-position {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+    background: rgba(99,102,241,0.15);
+    color: #818cf8;
+    border: 1px solid rgba(99,102,241,0.3);
+  }
+  .badge-success {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+    background: rgba(20,184,166,0.15);
+    color: #2dd4bf;
+    border: 1px solid rgba(20,184,166,0.3);
+  }
+  .badge-pending {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+    background: rgba(251,191,36,0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.2);
+  }
+  .badge-rejected {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+    background: rgba(244,63,94,0.1);
+    color: #fb7185;
+    border: 1px solid rgba(244,63,94,0.2);
+  }
+
+  /* ─── Privacy Badge ──────────────────────────────────────────────────── */
+  .privacy-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium;
+    background: rgba(20,184,166,0.1);
+    color: #2dd4bf;
+    border: 1px solid rgba(20,184,166,0.2);
+  }
+
+  /* ─── Particle Background ────────────────────────────────────────────── */
+  .particle {
+    @apply absolute rounded-full opacity-20 animate-float;
+    background: radial-gradient(circle, #6366f1, transparent);
+  }
+}
+
+/* ─── Page Transition ───────────────────────────────────────────────────── */
+.page-enter {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* ─── Shimmer Loading ───────────────────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(90deg, #0d1529 25%, #162248 50%, #0d1529 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ─── Modal ─────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4;
+  background: rgba(5, 8, 15, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.modal-content {
+  @apply glass-card w-full max-w-md p-6 animate-slide-up;
+}
+
+/* ─── Nominee Avatar ─────────────────────────────────────────────────────── */
+.nominee-avatar {
+  @apply flex items-center justify-center rounded-full font-bold text-sm select-none flex-shrink-0;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.025em;
+}
+
+/* ─── Ballot Card Selected ───────────────────────────────────────────────── */
+.ballot-card-selected {
+  border-color: rgba(251,191,36,0.6) !important;
+  box-shadow: 0 0 0 1px rgba(251,191,36,0.4), 0 0 20px rgba(251,191,36,0.2) !important;
+}
+
+/* ─── Result Bar ─────────────────────────────────────────────────────────── */
+.result-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.result-bar-winner {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b) !important;
+  box-shadow: 0 0 8px rgba(251,191,36,0.5);
+}
+
+/* ─── Countdown ──────────────────────────────────────────────────────────── */
+.countdown-segment {
+  @apply flex flex-col items-center;
+}
+.countdown-number {
+  @apply text-2xl font-bold tabular-nums;
+  color: #818cf8;
+}
+.countdown-label {
+  @apply text-xs text-slate-500 uppercase tracking-widest;
+}
