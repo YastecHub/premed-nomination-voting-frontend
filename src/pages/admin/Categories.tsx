@@ -3,6 +3,9 @@ import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../../api/client';
 import type { Category } from '../../types';
+import ConfirmModal from '../../components/ui/ConfirmModal';
+import { useToast } from '../../contexts/ToastContext';
+import axios from 'axios';
 
 interface CategoryFormValues {
   name: string;
@@ -102,11 +105,16 @@ function toIso(val: string): string | null {
 
 export default function CategoriesAdmin() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Delete modal state
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchCats = () => {
     setLoading(true);
@@ -125,8 +133,16 @@ export default function CategoriesAdmin() {
         voting_close_at: toIso(form.voting_close_at),
       });
       setCreating(false);
+      toast.success(`Category "${form.name}" created successfully!`);
       fetchCats();
-    } finally { setSaving(false); }
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data as { detail?: string })?.detail ?? 'Failed to create category'
+        : 'Failed to create category';
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleUpdate = async (form: CategoryFormValues) => {
@@ -141,17 +157,34 @@ export default function CategoriesAdmin() {
         voting_close_at: toIso(form.voting_close_at),
       });
       setEditing(null);
+      toast.success(`Category "${form.name}" updated successfully!`);
       fetchCats();
-    } finally { setSaving(false); }
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data as { detail?: string })?.detail ?? 'Failed to update category'
+        : 'Failed to update category';
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this category? This cannot be undone if no nominations exist.')) return;
-    await deleteCategory(id).catch((e: unknown) => {
-      const msg = e instanceof Error ? e.message : 'Cannot delete';
-      alert(msg);
-    });
-    fetchCats();
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteCategory(deleteTarget.id);
+      toast.success(`"${deleteTarget.name}" deleted successfully.`);
+      setDeleteTarget(null);
+      fetchCats();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data as { detail?: string })?.detail ?? 'Cannot delete category with existing nominations'
+        : 'Cannot delete category';
+      toast.error(msg, 'Delete Error');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -197,7 +230,7 @@ export default function CategoriesAdmin() {
                       </span>
                       <div className="min-w-0">
                         <p className="font-medium text-white truncate">{cat.name}</p>
-                        <div className="flex gap-2 mt-1">
+                        <div className="flex gap-2 mt-1 flex-wrap">
                           {cat.nomination_is_open && <span className="badge-success text-xs">Nominations Open</span>}
                           {cat.voting_is_open && <span className="badge-pending text-xs">Voting Open</span>}
                           {cat.ballot_published && <span className="badge-position text-xs">Ballot Published</span>}
@@ -205,8 +238,8 @@ export default function CategoriesAdmin() {
                       </div>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
-                      <button onClick={() => setEditing(cat)} className="btn-ghost p-2"><Pencil size={14} /></button>
-                      <button onClick={() => void handleDelete(cat.id)} className="btn-danger p-2"><Trash2 size={14} /></button>
+                      <button onClick={() => setEditing(cat)} className="btn-ghost p-2" title="Edit Category"><Pencil size={14} /></button>
+                      <button onClick={() => setDeleteTarget(cat)} className="btn-danger p-2" title="Delete Category"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 )}
@@ -218,6 +251,26 @@ export default function CategoriesAdmin() {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Popup */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Delete Category"
+        message={
+          <>
+            Are you sure you want to delete <strong className="text-white">"{deleteTarget?.name}"</strong>?
+            This cannot be undone.
+          </>
+        }
+        confirmText="Yes, Delete Category"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => {
+          if (!deleting) setDeleteTarget(null);
+        }}
+      />
     </div>
   );
 }

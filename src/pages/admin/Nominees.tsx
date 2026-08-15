@@ -9,6 +9,9 @@ import {
   publishBallot,
 } from '../../api/client';
 import type { Category, Nomination, DuplicateHint } from '../../types';
+import ConfirmModal from '../../components/ui/ConfirmModal';
+import { useToast } from '../../contexts/ToastContext';
+import axios from 'axios';
 
 interface NomCardProps {
   nom: Nomination;
@@ -29,8 +32,8 @@ function NomCard({ nom, onApprove, onReject, isDuplicate }: NomCardProps) {
           {nom.reason && <p className="text-slate-400 text-xs mt-1 line-clamp-2">{nom.reason}</p>}
         </div>
         <div className="flex gap-1 flex-shrink-0">
-          <button onClick={() => onApprove(nom.id)} className="btn-success p-1.5 text-xs"><Check size={13} /></button>
-          <button onClick={() => onReject(nom.id)} className="btn-danger p-1.5 text-xs"><X size={13} /></button>
+          <button onClick={() => onApprove(nom.id)} className="btn-success p-1.5 text-xs" title="Approve Nominee"><Check size={13} /></button>
+          <button onClick={() => onReject(nom.id)} className="btn-danger p-1.5 text-xs" title="Reject Nominee"><X size={13} /></button>
         </div>
       </div>
     </div>
@@ -96,12 +99,14 @@ interface KanbanColumn {
 
 export default function NomineesAdmin() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCat, setSelectedCat] = useState<Category | null>(null);
   const [nominations, setNominations] = useState<Nomination[]>([]);
   const [duplicates, setDuplicates] = useState<DuplicateHint[]>([]);
   const [loading, setLoading] = useState(false);
   const [mergeModal, setMergeModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
   useEffect(() => { getCategories().then((r) => setCategories(r.data)); }, []);
@@ -117,27 +122,44 @@ export default function NomineesAdmin() {
   };
 
   const handleStatus = async (id: string, status: string) => {
-    await updateNominationStatus(id, status);
-    if (selectedCat) void fetchNoms(selectedCat);
+    try {
+      await updateNominationStatus(id, status);
+      toast.success(`Nomination status updated to ${status}.`);
+      if (selectedCat) void fetchNoms(selectedCat);
+    } catch {
+      toast.error('Failed to update nomination status.');
+    }
   };
 
   const handleMerge = async (keepId: string, discardId: string, finalName: string) => {
-    await mergeNominations({ keep_id: keepId, discard_id: discardId, final_name: finalName });
-    if (selectedCat) void fetchNoms(selectedCat);
+    try {
+      await mergeNominations({ keep_id: keepId, discard_id: discardId, final_name: finalName });
+      toast.success(`Nominees merged into "${finalName}".`);
+      if (selectedCat) void fetchNoms(selectedCat);
+    } catch {
+      toast.error('Failed to merge nominations.');
+    }
   };
 
-  const handlePublish = async () => {
+  const executePublish = async () => {
     if (!selectedCat) return;
-    if (!confirm(`Publish ballot for "${selectedCat.name}"? This cannot be undone.`)) return;
     setPublishing(true);
     try {
       await publishBallot(selectedCat.id);
-      alert('Ballot published!');
-      getCategories().then((r) => setCategories(r.data));
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to publish';
-      alert(msg);
-    } finally { setPublishing(false); }
+      toast.success(`Ballot published for "${selectedCat.name}"!`);
+      setShowPublishModal(false);
+      const res = await getCategories();
+      setCategories(res.data);
+      const updated = res.data.find((c) => c.id === selectedCat.id);
+      if (updated) setSelectedCat(updated);
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data as { detail?: string })?.detail ?? 'Failed to publish ballot'
+        : 'Failed to publish ballot';
+      toast.error(msg);
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const pending = nominations.filter((n) => n.status === 'pending');
@@ -213,8 +235,8 @@ export default function NomineesAdmin() {
 
             {/* Publish button */}
             {approved.length > 0 && !selectedCat.ballot_published && (
-              <button onClick={() => void handlePublish()} disabled={publishing} className="btn-primary w-full sm:w-auto">
-                {publishing ? <Loader2 size={14} className="animate-spin" /> : <BookCheck size={14} />}
+              <button onClick={() => setShowPublishModal(true)} className="btn-primary w-full sm:w-auto">
+                <BookCheck size={14} />
                 Publish Ballot ({approved.length} approved nominees)
               </button>
             )}
@@ -256,6 +278,27 @@ export default function NomineesAdmin() {
           onMerge={handleMerge}
         />
       )}
+
+      {/* Publish Ballot Modal */}
+      <ConfirmModal
+        isOpen={showPublishModal}
+        title="Publish Voting Ballot"
+        message={
+          <>
+            Are you sure you want to publish the ballot for <strong className="text-white">"{selectedCat?.name}"</strong> with <strong className="text-gold-400">{approved.length} approved nominee(s)</strong>?
+            <br /><br />
+            Once published, students will be able to vote and this action <strong className="text-white">cannot be undone</strong>.
+          </>
+        }
+        confirmText="Yes, Publish Ballot"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={publishing}
+        onConfirm={() => void executePublish()}
+        onCancel={() => {
+          if (!publishing) setShowPublishModal(false);
+        }}
+      />
     </div>
   );
 }
