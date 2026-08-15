@@ -1,12 +1,19 @@
-import { useState, useEffect } from "react";
-import { Trophy, Users, Clock, CheckCircle2, Vote, Loader2, Plus, LogOut } from "lucide-react";
-import { getCategories } from "../../api/client";
-import { useAuth } from "../../contexts/AuthContext";
-import PhaseCountdown from "../../components/ui/PhaseCountdown";
-import NominationModal from "../../components/student/NominationModal";
-import VotingModal from "../../components/student/VotingModal";
+import { useState, useEffect } from 'react';
+import { Trophy, Users, Clock, CheckCircle2, Vote, Loader2, Plus, LogOut } from 'lucide-react';
+import { getCategories } from '../../api/client';
+import { useAuth } from '../../contexts/AuthContext';
+import PhaseCountdown from '../../components/ui/PhaseCountdown';
+import NominationModal from '../../components/student/NominationModal';
+import VotingModal from '../../components/student/VotingModal';
+import type { Category } from '../../types';
 
-function StatusPill({ cat, hasNominated, hasVoted }) {
+interface StatusPillProps {
+  cat: Category;
+  hasNominated: boolean;
+  hasVoted: boolean;
+}
+
+function StatusPill({ cat, hasNominated, hasVoted }: StatusPillProps) {
   if (cat.nomination_is_open && !hasNominated) {
     return <span className="badge-pending">Nominate Now</span>;
   }
@@ -22,8 +29,14 @@ function StatusPill({ cat, hasNominated, hasVoted }) {
   return <span className="badge-rejected text-slate-400 border-slate-700 bg-transparent">Closed</span>;
 }
 
-function CategoryCard({ cat, onNominate, onVote }) {
-  const isAward = cat.type === "award";
+interface CategoryCardProps {
+  cat: Category;
+  onNominate: (cat: Category) => void;
+  onVote: (cat: Category) => void;
+}
+
+function CategoryCard({ cat, onNominate, onVote }: CategoryCardProps) {
+  const isAward = cat.type === 'award';
 
   const handleClick = () => {
     if (cat.nomination_is_open) onNominate(cat);
@@ -37,7 +50,7 @@ function CategoryCard({ cat, onNominate, onVote }) {
       id={`cat-${cat.id}`}
       onClick={isActionable ? handleClick : undefined}
       className={`glass-card p-5 flex flex-col gap-4 transition-all duration-300 ${
-        isActionable ? "cursor-pointer glass-card-hover" : "opacity-70"
+        isActionable ? 'cursor-pointer glass-card-hover' : 'opacity-70'
       }`}
     >
       {/* Header */}
@@ -47,8 +60,8 @@ function CategoryCard({ cat, onNominate, onVote }) {
             className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
               background: isAward
-                ? "linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1))"
-                : "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.1))",
+                ? 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1))'
+                : 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.1))',
             }}
           >
             {isAward ? (
@@ -61,8 +74,8 @@ function CategoryCard({ cat, onNominate, onVote }) {
             <h3 className="font-semibold text-white text-sm leading-tight">{cat.name}</h3>
           </div>
         </div>
-        <span className={isAward ? "badge-award" : "badge-position"}>
-          {isAward ? "🏆 Award" : "👤 Position"}
+        <span className={isAward ? 'badge-award' : 'badge-position'}>
+          {isAward ? '🏆 Award' : '👤 Position'}
         </span>
       </div>
 
@@ -81,7 +94,7 @@ function CategoryCard({ cat, onNominate, onVote }) {
 
       {/* CTA */}
       {isActionable && (
-        <button className={cat.nomination_is_open ? "btn-primary text-xs py-2" : "btn-gold text-xs py-2"}>
+        <button className={cat.nomination_is_open ? 'btn-primary text-xs py-2' : 'btn-gold text-xs py-2'}>
           {cat.nomination_is_open ? (
             <><Plus size={14} /> Nominate</>
           ) : (
@@ -93,12 +106,18 @@ function CategoryCard({ cat, onNominate, onVote }) {
   );
 }
 
+interface StatItem {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+}
+
 export default function StudentDashboard() {
-  const { user, logout } = useAuth();
-  const [categories, setCategories] = useState([]);
+  const { logout } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [nominateTarget, setNominateTarget] = useState(null);
-  const [voteTarget, setVoteTarget] = useState(null);
+  const [nominateTarget, setNominateTarget] = useState<Category | null>(null);
+  const [voteTarget, setVoteTarget] = useState<Category | null>(null);
 
   const fetchCategories = async () => {
     try {
@@ -111,10 +130,16 @@ export default function StudentDashboard() {
     }
   };
 
-  useEffect(() => { fetchCategories(); }, []);
+  useEffect(() => { void fetchCategories(); }, []);
 
   const nomOpen = categories.filter((c) => c.nomination_is_open).length;
   const voteOpen = categories.filter((c) => c.voting_is_open).length;
+
+  const stats: StatItem[] = [
+    { label: 'Categories', value: categories.length, icon: <Trophy size={16} className="text-gold-400" /> },
+    { label: 'Nominations Open', value: nomOpen, icon: <Plus size={16} className="text-indigo-400" /> },
+    { label: 'Voting Open', value: voteOpen, icon: <Vote size={16} className="text-teal-400" /> },
+  ];
 
   return (
     <div className="min-h-screen bg-navy-950">
@@ -125,7 +150,7 @@ export default function StudentDashboard() {
             <Trophy size={20} className="text-indigo-400" />
             <span className="font-display text-white font-semibold">UNILAG Premed</span>
           </div>
-          <button onClick={logout} className="btn-ghost text-xs gap-1.5">
+          <button onClick={() => void logout()} className="btn-ghost text-xs gap-1.5">
             <LogOut size={14} /> Sign out
           </button>
         </div>
@@ -144,11 +169,7 @@ export default function StudentDashboard() {
 
         {/* Stats strip */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-          {[
-            { label: "Categories", value: categories.length, icon: <Trophy size={16} className="text-gold-400" /> },
-            { label: "Nominations Open", value: nomOpen, icon: <Plus size={16} className="text-indigo-400" /> },
-            { label: "Voting Open", value: voteOpen, icon: <Vote size={16} className="text-teal-400" /> },
-          ].map((stat) => (
+          {stats.map((stat) => (
             <div key={stat.label} className="glass-card p-4 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
                 {stat.icon}
@@ -192,14 +213,14 @@ export default function StudentDashboard() {
         <NominationModal
           category={nominateTarget}
           onClose={() => setNominateTarget(null)}
-          onSuccess={() => { setNominateTarget(null); fetchCategories(); }}
+          onSuccess={() => { setNominateTarget(null); void fetchCategories(); }}
         />
       )}
       {voteTarget && (
         <VotingModal
           category={voteTarget}
           onClose={() => setVoteTarget(null)}
-          onSuccess={() => { setVoteTarget(null); fetchCategories(); }}
+          onSuccess={() => { setVoteTarget(null); void fetchCategories(); }}
         />
       )}
     </div>

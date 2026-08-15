@@ -1,36 +1,53 @@
-import { useState, useEffect } from "react";
-import { Users, Trophy, BarChart2, Settings, Upload, LogOut, ChevronRight } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { getIdentityStats, getCategories } from "../../api/client";
+import { useState, useEffect } from 'react';
+import { Users, Trophy, BarChart2, Settings, Upload, LogOut, ChevronRight } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { getIdentityStats, getCategories } from '../../api/client';
+import type { IdentityStats } from '../../types';
+import type { ReactNode } from 'react';
 
-function KpiCard({ label, value, icon, color }) {
+interface KpiCardProps {
+  label: string;
+  value: number | null | undefined;
+  icon: ReactNode;
+  color: string;
+}
+
+function KpiCard({ label, value, icon, color }: KpiCardProps) {
   return (
     <div className="glass-card p-5 flex items-center gap-4">
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: color + "20", border: `1px solid ${color}30` }}>
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: color + '20', border: `1px solid ${color}30` }}
+      >
         <span style={{ color }}>{icon}</span>
       </div>
       <div>
-        <p className="text-2xl font-bold text-white">{value ?? "—"}</p>
+        <p className="text-2xl font-bold text-white">{value ?? '—'}</p>
         <p className="text-xs text-slate-500">{label}</p>
       </div>
     </div>
   );
 }
 
-const NAV_LINKS = [
-  { label: "Categories", href: "/admin/categories", icon: <Settings size={16} /> },
-  { label: "Nominees", href: "/admin/nominees", icon: <Trophy size={16} /> },
-  { label: "Results", href: "/admin/results", icon: <BarChart2 size={16} /> },
-  { label: "Seed Voters", href: "/admin/seed", icon: <Upload size={16} /> },
+interface NavLink {
+  label: string;
+  href: string;
+  icon: ReactNode;
+}
+
+const NAV_LINKS: NavLink[] = [
+  { label: 'Categories', href: '/admin/categories', icon: <Settings size={16} /> },
+  { label: 'Nominees', href: '/admin/nominees', icon: <Trophy size={16} /> },
+  { label: 'Results', href: '/admin/results', icon: <BarChart2 size={16} /> },
+  { label: 'Seed Voters', href: '/admin/seed', icon: <Upload size={16} /> },
 ];
 
 export default function AdminDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState(null);
-  const [catCount, setCatCount] = useState(null);
+  const [stats, setStats] = useState<IdentityStats | null>(null);
+  const [catCount, setCatCount] = useState<number | null>(null);
 
   useEffect(() => {
     getIdentityStats().then((r) => setStats(r.data)).catch(() => {});
@@ -47,7 +64,7 @@ export default function AdminDashboard() {
             <span className="font-display text-white font-semibold">Admin Panel</span>
             <span className="badge-position text-xs ml-1">UNILAG Premed</span>
           </div>
-          <button onClick={logout} className="btn-ghost text-xs gap-1.5">
+          <button onClick={() => void logout()} className="btn-ghost text-xs gap-1.5">
             <LogOut size={14} /> Sign out
           </button>
         </div>
@@ -72,8 +89,8 @@ export default function AdminDashboard() {
           {NAV_LINKS.map(({ label, href, icon }) => (
             <button
               key={href}
-              id={`admin-nav-${label.toLowerCase().replace(" ", "-")}`}
-              onClick={() => navigate(href)}
+              id={`admin-nav-${label.toLowerCase().replace(' ', '-')}`}
+              onClick={() => void navigate(href)}
               className="glass-card-hover p-5 flex items-center justify-between text-left group"
             >
               <div className="flex items-center gap-3">

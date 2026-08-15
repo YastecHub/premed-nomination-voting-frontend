@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "autoprefixer": "^10.5.4",
     "postcss": "^8.5.25",
     "tailwindcss": "^3.4.19",
@@ -19,6 +22,8 @@
     "axios": "^1.19.0",
     "canvas-confetti": "^1.9.4",
     "lucide-react": "^1.28.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2"
   }
 }

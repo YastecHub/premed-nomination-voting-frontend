@@ -1,39 +1,48 @@
-import { useState, useEffect } from "react";
-import { X, Check, Loader2, AlertTriangle } from "lucide-react";
-import { getBallot, submitVote } from "../../api/client";
-import NomineeAvatar from "../ui/NomineeAvatar";
-import PrivacyBadge from "../ui/PrivacyBadge";
-import confetti from "canvas-confetti";
+import { useState, useEffect } from 'react';
+import { X, Check, Loader2, AlertTriangle } from 'lucide-react';
+import { getBallot, submitVote } from '../../api/client';
+import NomineeAvatar from '../ui/NomineeAvatar';
+import PrivacyBadge from '../ui/PrivacyBadge';
+import confetti from 'canvas-confetti';
+import type { Category, BallotEntry } from '../../types';
 
-export default function VotingModal({ category, onClose, onSuccess }) {
-  const [entries, setEntries] = useState([]);
-  const [selected, setSelected] = useState(null);
+interface VotingModalProps {
+  category: Category;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export default function VotingModal({ category, onClose, onSuccess }: VotingModalProps) {
+  const [entries, setEntries] = useState<BallotEntry[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [confirm, setConfirm] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getBallot(category.id)
       .then((res) => setEntries(res.data.entries))
-      .catch(() => setError("Failed to load ballot."))
+      .catch(() => setError('Failed to load ballot.'))
       .finally(() => setLoading(false));
   }, [category.id]);
 
   const handleVote = async () => {
+    if (!selected) return;
     setSubmitting(true);
-    setError("");
+    setError('');
     try {
       await submitVote({ category_id: category.id, ballot_entry_id: selected });
       confetti({
         particleCount: 100,
         spread: 60,
         origin: { y: 0.65 },
-        colors: ["#fbbf24", "#f59e0b", "#6366f1", "#14b8a6"],
+        colors: ['#fbbf24', '#f59e0b', '#6366f1', '#14b8a6'],
       });
       onSuccess();
-    } catch (err) {
-      setError(err.response?.data?.detail || "Vote submission failed.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Vote submission failed.';
+      setError(msg);
       setSubmitting(false);
       setConfirm(false);
     }
@@ -73,16 +82,16 @@ export default function VotingModal({ category, onClose, onSuccess }) {
                 onClick={() => setSelected(entry.id)}
                 className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 text-left ${
                   isSelected
-                    ? "ballot-card-selected bg-gold-500/5"
-                    : "glass-card hover:border-white/20"
+                    ? 'ballot-card-selected bg-gold-500/5'
+                    : 'glass-card hover:border-white/20'
                 }`}
               >
                 <NomineeAvatar name={entry.nominee_name} size="md" />
-                <span className={`font-medium text-sm flex-1 ${isSelected ? "text-gold-400" : "text-white"}`}>
+                <span className={`font-medium text-sm flex-1 ${isSelected ? 'text-gold-400' : 'text-white'}`}>
                   {entry.nominee_name}
                 </span>
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                  isSelected ? "bg-gold-500 border-gold-500" : "border-white/20"
+                  isSelected ? 'bg-gold-500 border-gold-500' : 'border-white/20'
                 }`}>
                   {isSelected && <Check size={12} className="text-navy-900" />}
                 </div>
@@ -116,7 +125,7 @@ export default function VotingModal({ category, onClose, onSuccess }) {
                 <AlertTriangle size={16} className="text-gold-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-slate-300">
                   Once submitted, your vote <strong className="text-white">cannot be changed</strong>.
-                  You are voting for:{" "}
+                  You are voting for:{' '}
                   <strong className="text-gold-400">
                     {entries.find((e) => e.id === selected)?.nominee_name}
                   </strong>
@@ -128,12 +137,12 @@ export default function VotingModal({ category, onClose, onSuccess }) {
                 </button>
                 <button
                   id="final-vote-btn"
-                  onClick={handleVote}
+                  onClick={() => void handleVote()}
                   disabled={submitting}
                   className="btn-gold flex-1"
                 >
                   {submitting ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                  {submitting ? "Casting…" : "Yes, Cast My Vote"}
+                  {submitting ? 'Casting…' : 'Yes, Cast My Vote'}
                 </button>
               </div>
             </div>

@@ -1,22 +1,29 @@
-import { useState } from "react";
-import { X, Trophy, Users, Loader2, ChevronRight, Check } from "lucide-react";
-import { submitNomination } from "../../api/client";
-import PrivacyBadge from "../ui/PrivacyBadge";
-import confetti from "canvas-confetti";
+import { useState } from 'react';
+import { X, Trophy, Users, Loader2, ChevronRight, Check } from 'lucide-react';
+import { submitNomination } from '../../api/client';
+import PrivacyBadge from '../ui/PrivacyBadge';
+import confetti from 'canvas-confetti';
+import type { Category } from '../../types';
 
-const STEPS = ["Nominee", "Reason", "Review"];
+interface NominationModalProps {
+  category: Category;
+  onClose: () => void;
+  onSuccess: () => void;
+}
 
-export default function NominationModal({ category, onClose, onSuccess }) {
+const STEPS = ['Nominee', 'Reason', 'Review'] as const;
+
+export default function NominationModal({ category, onClose, onSuccess }: NominationModalProps) {
   const [step, setStep] = useState(0);
-  const [nomineeName, setNomineeName] = useState("");
-  const [reason, setReason] = useState("");
+  const [nomineeName, setNomineeName] = useState('');
+  const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const isAward = category.type === "award";
+  const isAward = category.type === 'award';
 
   const handleSubmit = async () => {
-    setError("");
+    setError('');
     setLoading(true);
     try {
       await submitNomination({
@@ -24,16 +31,17 @@ export default function NominationModal({ category, onClose, onSuccess }) {
         nominee_name: nomineeName.trim(),
         reason: reason.trim() || undefined,
       });
-      // Confetti 🎉
       confetti({
         particleCount: 120,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ["#6366f1", "#8b5cf6", "#fbbf24", "#14b8a6"],
+        colors: ['#6366f1', '#8b5cf6', '#fbbf24', '#14b8a6'],
       });
       onSuccess();
-    } catch (err) {
-      setError(err.response?.data?.detail || "Submission failed. Please try again.");
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : 'Submission failed. Please try again.';
+      setError(msg);
       setLoading(false);
     }
   };
@@ -44,8 +52,10 @@ export default function NominationModal({ category, onClose, onSuccess }) {
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: isAward ? "rgba(251,191,36,0.15)" : "rgba(99,102,241,0.15)" }}>
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: isAward ? 'rgba(251,191,36,0.15)' : 'rgba(99,102,241,0.15)' }}
+            >
               {isAward
                 ? <Trophy size={16} className="text-gold-400" />
                 : <Users size={16} className="text-indigo-400" />
@@ -64,14 +74,14 @@ export default function NominationModal({ category, onClose, onSuccess }) {
           {STEPS.map((s, i) => (
             <div key={s} className="flex items-center gap-1">
               <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
-                i < step ? "bg-indigo-600 text-white" :
-                i === step ? "border-2 border-indigo-500 text-indigo-400" :
-                "border border-white/10 text-slate-600"
+                i < step ? 'bg-indigo-600 text-white' :
+                i === step ? 'border-2 border-indigo-500 text-indigo-400' :
+                'border border-white/10 text-slate-600'
               }`}>
                 {i < step ? <Check size={10} /> : i + 1}
               </div>
               {i < STEPS.length - 1 && (
-                <div className={`h-px flex-1 w-6 transition-all duration-300 ${i < step ? "bg-indigo-600" : "bg-white/10"}`} />
+                <div className={`h-px flex-1 w-6 transition-all duration-300 ${i < step ? 'bg-indigo-600' : 'bg-white/10'}`} />
               )}
             </div>
           ))}
@@ -112,7 +122,7 @@ export default function NominationModal({ category, onClose, onSuccess }) {
           <div className="space-y-4 animate-fade-in">
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2">
-                Reason / Justification{" "}
+                Reason / Justification{' '}
                 <span className="text-slate-600">(optional)</span>
               </label>
               <textarea
@@ -168,12 +178,12 @@ export default function NominationModal({ category, onClose, onSuccess }) {
               </button>
               <button
                 id="submit-nomination-btn"
-                onClick={handleSubmit}
+                onClick={() => void handleSubmit()}
                 disabled={loading}
                 className="btn-primary flex-1"
               >
                 {loading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                {loading ? "Submitting…" : "Submit Anonymously"}
+                {loading ? 'Submitting…' : 'Submit Anonymously'}
               </button>
             </div>
           </div>

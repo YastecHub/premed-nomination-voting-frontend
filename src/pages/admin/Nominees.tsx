@@ -1,11 +1,25 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Loader2, Check, X, Merge, ChevronDown, ChevronUp, BookCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { getCategories, listNominations, updateNominationStatus, mergeNominations, publishBallot } from "../../api/client";
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Loader2, Check, X, Merge, BookCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  getCategories,
+  listNominations,
+  updateNominationStatus,
+  mergeNominations,
+  publishBallot,
+} from '../../api/client';
+import type { Category, Nomination, DuplicateHint } from '../../types';
 
-function NomCard({ nom, onApprove, onReject, isDuplicate }) {
+interface NomCardProps {
+  nom: Nomination;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+  isDuplicate: boolean;
+}
+
+function NomCard({ nom, onApprove, onReject, isDuplicate }: NomCardProps) {
   return (
-    <div className={`glass-card p-4 ${isDuplicate ? "border-gold-500/30" : ""}`}>
+    <div className={`glass-card p-4 ${isDuplicate ? 'border-gold-500/30' : ''}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -23,10 +37,16 @@ function NomCard({ nom, onApprove, onReject, isDuplicate }) {
   );
 }
 
-function MergeModal({ duplicates, nominations, onClose, onMerge }) {
-  const [keepId, setKeepId] = useState(duplicates[0]?.nomination_a_id || "");
-  const [discardId, setDiscardId] = useState(duplicates[0]?.nomination_b_id || "");
-  const [finalName, setFinalName] = useState(duplicates[0]?.name_a || "");
+interface MergeModalProps {
+  duplicates: DuplicateHint[];
+  onClose: () => void;
+  onMerge: (keepId: string, discardId: string, finalName: string) => Promise<void>;
+}
+
+function MergeModal({ duplicates, onClose, onMerge }: MergeModalProps) {
+  const [keepId] = useState(duplicates[0]?.nomination_a_id ?? '');
+  const [discardId] = useState(duplicates[0]?.nomination_b_id ?? '');
+  const [finalName, setFinalName] = useState(duplicates[0]?.name_a ?? '');
   const [saving, setSaving] = useState(false);
 
   const handleMerge = async () => {
@@ -46,7 +66,7 @@ function MergeModal({ duplicates, nominations, onClose, onMerge }) {
           {duplicates.slice(0, 3).map((d, i) => (
             <div key={i} className="glass-card p-3 text-xs text-slate-300">
               <span className="text-gold-400 font-semibold">{d.name_a}</span>
-              {" "}vs{" "}
+              {' '}vs{' '}
               <span className="text-indigo-400 font-semibold">{d.name_b}</span>
               <span className="text-slate-500 ml-2">({d.similarity_score}% similar)</span>
             </div>
@@ -57,7 +77,7 @@ function MergeModal({ duplicates, nominations, onClose, onMerge }) {
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-ghost flex-1">Cancel</button>
-            <button onClick={handleMerge} disabled={saving || !finalName.trim()} className="btn-gold flex-1">
+            <button onClick={() => void handleMerge()} disabled={saving || !finalName.trim()} className="btn-gold flex-1">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Merge size={14} />}
               Merge
             </button>
@@ -68,61 +88,77 @@ function MergeModal({ duplicates, nominations, onClose, onMerge }) {
   );
 }
 
+interface KanbanColumn {
+  label: string;
+  noms: Nomination[];
+  color: string;
+}
+
 export default function NomineesAdmin() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
-  const [selectedCat, setSelectedCat] = useState(null);
-  const [data, setData] = useState(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCat, setSelectedCat] = useState<Category | null>(null);
+  const [nominations, setNominations] = useState<Nomination[]>([]);
+  const [duplicates, setDuplicates] = useState<DuplicateHint[]>([]);
   const [loading, setLoading] = useState(false);
   const [mergeModal, setMergeModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
   useEffect(() => { getCategories().then((r) => setCategories(r.data)); }, []);
 
-  const fetchNoms = async (cat) => {
+  const fetchNoms = async (cat: Category) => {
     setSelectedCat(cat);
     setLoading(true);
     try {
       const res = await listNominations(cat.id);
-      setData(res.data);
+      setNominations(res.data.nominations);
+      setDuplicates(res.data.duplicate_hints);
     } finally { setLoading(false); }
   };
 
-  const handleStatus = async (id, status) => {
+  const handleStatus = async (id: string, status: string) => {
     await updateNominationStatus(id, status);
-    fetchNoms(selectedCat);
+    if (selectedCat) void fetchNoms(selectedCat);
   };
 
-  const handleMerge = async (keepId, discardId, finalName) => {
+  const handleMerge = async (keepId: string, discardId: string, finalName: string) => {
     await mergeNominations({ keep_id: keepId, discard_id: discardId, final_name: finalName });
-    fetchNoms(selectedCat);
+    if (selectedCat) void fetchNoms(selectedCat);
   };
 
   const handlePublish = async () => {
+    if (!selectedCat) return;
     if (!confirm(`Publish ballot for "${selectedCat.name}"? This cannot be undone.`)) return;
     setPublishing(true);
     try {
       await publishBallot(selectedCat.id);
-      alert("Ballot published!");
+      alert('Ballot published!');
       getCategories().then((r) => setCategories(r.data));
-    } catch (e) { alert(e.response?.data?.detail || "Failed to publish"); }
-    finally { setPublishing(false); }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Failed to publish';
+      alert(msg);
+    } finally { setPublishing(false); }
   };
 
-  const pending = data?.nominations?.filter((n) => n.status === "pending") || [];
-  const approved = data?.nominations?.filter((n) => n.status === "approved") || [];
-  const rejected = data?.nominations?.filter((n) => n.status === "rejected") || [];
-  const duplicates = data?.duplicate_hints || [];
+  const pending = nominations.filter((n) => n.status === 'pending');
+  const approved = nominations.filter((n) => n.status === 'approved');
+  const rejected = nominations.filter((n) => n.status === 'rejected');
 
   const pendingDuplicateIds = new Set(
     duplicates.flatMap((d) => [d.nomination_a_id, d.nomination_b_id])
   );
 
+  const columns: KanbanColumn[] = [
+    { label: 'Pending', noms: pending, color: 'text-gold-400' },
+    { label: 'Approved', noms: approved, color: 'text-teal-400' },
+    { label: 'Rejected', noms: rejected, color: 'text-rose-400' },
+  ];
+
   return (
     <div className="min-h-screen bg-navy-950">
       <nav className="sticky top-0 z-30 bg-navy-900/80 backdrop-blur-md border-b border-white/5 px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/admin")} className="btn-ghost p-1.5"><ArrowLeft size={16} /></button>
+          <button onClick={() => void navigate('/admin')} className="btn-ghost p-1.5"><ArrowLeft size={16} /></button>
           <span className="font-display text-white font-semibold">Nominees Review</span>
         </div>
       </nav>
@@ -135,11 +171,11 @@ export default function NomineesAdmin() {
             {categories.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => fetchNoms(cat)}
+                onClick={() => void fetchNoms(cat)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
                   selectedCat?.id === cat.id
-                    ? "bg-indigo-600 border-indigo-500 text-white"
-                    : "glass-card border-white/10 text-slate-400 hover:text-white"
+                    ? 'bg-indigo-600 border-indigo-500 text-white'
+                    : 'glass-card border-white/10 text-slate-400 hover:text-white'
                 }`}
               >
                 {cat.name}
@@ -158,7 +194,7 @@ export default function NomineesAdmin() {
           </div>
         )}
 
-        {selectedCat && !loading && data && (
+        {selectedCat && !loading && (
           <div className="space-y-6">
             {/* Duplicate alert */}
             {duplicates.length > 0 && (
@@ -177,7 +213,7 @@ export default function NomineesAdmin() {
 
             {/* Publish button */}
             {approved.length > 0 && !selectedCat.ballot_published && (
-              <button onClick={handlePublish} disabled={publishing} className="btn-primary w-full sm:w-auto">
+              <button onClick={() => void handlePublish()} disabled={publishing} className="btn-primary w-full sm:w-auto">
                 {publishing ? <Loader2 size={14} className="animate-spin" /> : <BookCheck size={14} />}
                 Publish Ballot ({approved.length} approved nominees)
               </button>
@@ -188,11 +224,7 @@ export default function NomineesAdmin() {
 
             {/* Kanban columns */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { label: "Pending", noms: pending, color: "text-gold-400" },
-                { label: "Approved", noms: approved, color: "text-teal-400" },
-                { label: "Rejected", noms: rejected, color: "text-rose-400" },
-              ].map(({ label, noms, color }) => (
+              {columns.map(({ label, noms, color }) => (
                 <div key={label} className="glass-card p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <h3 className={`text-sm font-semibold ${color}`}>{label}</h3>
@@ -205,8 +237,8 @@ export default function NomineesAdmin() {
                         key={nom.id}
                         nom={nom}
                         isDuplicate={pendingDuplicateIds.has(nom.id)}
-                        onApprove={(id) => handleStatus(id, "approved")}
-                        onReject={(id) => handleStatus(id, "rejected")}
+                        onApprove={(id) => void handleStatus(id, 'approved')}
+                        onReject={(id) => void handleStatus(id, 'rejected')}
                       />
                     ))}
                   </div>
@@ -220,7 +252,6 @@ export default function NomineesAdmin() {
       {mergeModal && (
         <MergeModal
           duplicates={duplicates}
-          nominations={data?.nominations || []}
           onClose={() => setMergeModal(false)}
           onMerge={handleMerge}
         />

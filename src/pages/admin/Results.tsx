@@ -1,17 +1,24 @@
-import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, BarChart2, Download, Trophy, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { getAllResults, exportResultsCsv } from "../../api/client";
-import NomineeAvatar from "../../components/ui/NomineeAvatar";
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, BarChart2, Download, Trophy, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getAllResults, exportResultsCsv } from '../../api/client';
+import NomineeAvatar from '../../components/ui/NomineeAvatar';
+import type { CategoryResult, ResultEntry } from '../../types';
 
-function ResultBar({ entry, maxVotes }) {
+interface ResultBarProps {
+  entry: ResultEntry;
+  maxVotes: number;
+}
+
+function ResultBar({ entry, maxVotes }: ResultBarProps) {
   const pct = maxVotes > 0 ? (entry.vote_count / maxVotes) * 100 : 0;
-  const barRef = useRef(null);
+  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = barRef.current;
     if (!el) return;
-    setTimeout(() => { el.style.width = pct + "%"; }, 100);
+    const id = setTimeout(() => { el.style.width = pct + '%'; }, 100);
+    return () => clearTimeout(id);
   }, [pct]);
 
   return (
@@ -19,17 +26,17 @@ function ResultBar({ entry, maxVotes }) {
       <NomineeAvatar name={entry.nominee_name} size="sm" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
-          <span className={`text-sm font-medium truncate ${entry.is_winner ? "text-gold-400" : "text-white"}`}>
+          <span className={`text-sm font-medium truncate ${entry.is_winner ? 'text-gold-400' : 'text-white'}`}>
             {entry.nominee_name}
-            {entry.is_winner && " 🏆"}
+            {entry.is_winner && ' 🏆'}
           </span>
           <span className="text-xs text-slate-400 ml-2 flex-shrink-0">{entry.vote_count} votes</span>
         </div>
         <div className="h-2 bg-navy-800 rounded-full overflow-hidden">
           <div
             ref={barRef}
-            className={`h-full rounded-full transition-all duration-700 ease-out ${entry.is_winner ? "result-bar-winner" : "result-bar"}`}
-            style={{ width: "0%" }}
+            className={`h-full rounded-full transition-all duration-700 ease-out ${entry.is_winner ? 'result-bar-winner' : 'result-bar'}`}
+            style={{ width: '0%' }}
           />
         </div>
       </div>
@@ -39,7 +46,7 @@ function ResultBar({ entry, maxVotes }) {
 
 export default function Results() {
   const navigate = useNavigate();
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<CategoryResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
@@ -53,10 +60,10 @@ export default function Results() {
     setExporting(true);
     try {
       const res = await exportResultsCsv();
-      const url = URL.createObjectURL(res.data);
-      const a = document.createElement("a");
+      const url = URL.createObjectURL(res.data as Blob);
+      const a = document.createElement('a');
       a.href = url;
-      a.download = "premed_results.csv";
+      a.download = 'premed_results.csv';
       a.click();
       URL.revokeObjectURL(url);
     } finally { setExporting(false); }
@@ -67,10 +74,10 @@ export default function Results() {
       <nav className="sticky top-0 z-30 bg-navy-900/80 backdrop-blur-md border-b border-white/5 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/admin")} className="btn-ghost p-1.5"><ArrowLeft size={16} /></button>
+            <button onClick={() => void navigate('/admin')} className="btn-ghost p-1.5"><ArrowLeft size={16} /></button>
             <span className="font-display text-white font-semibold">Results</span>
           </div>
-          <button onClick={handleExport} disabled={exporting} className="btn-primary text-xs">
+          <button onClick={() => void handleExport()} disabled={exporting} className="btn-primary text-xs">
             {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
             Export CSV
           </button>
@@ -92,21 +99,23 @@ export default function Results() {
         ) : (
           <div className="space-y-6">
             {results.map((cat, ci) => {
-              const maxVotes = Math.max(...(cat.results.map((r) => r.vote_count)), 1);
+              const maxVotes = Math.max(...cat.results.map((r) => r.vote_count), 1);
               return (
                 <div key={cat.category_id} className="glass-card p-6 animate-slide-up" style={{ animationDelay: `${ci * 80}ms` }}>
                   <div className="flex items-center gap-2 mb-5">
                     <BarChart2 size={18} className="text-indigo-400" />
                     <h2 className="font-semibold text-white">{cat.category_name}</h2>
-                    <span className={cat.category_type === "award" ? "badge-award" : "badge-position"}>
-                      {cat.category_type === "award" ? "🏆 Award" : "👤 Position"}
+                    <span className={cat.category_type === 'award' ? 'badge-award' : 'badge-position'}>
+                      {cat.category_type === 'award' ? '🏆 Award' : '👤 Position'}
                     </span>
+                    <Trophy size={16} className="text-transparent" aria-hidden />
                   </div>
                   {cat.results.length === 0 ? (
                     <p className="text-slate-500 text-sm">No votes recorded yet.</p>
                   ) : (
                     <div className="space-y-4">
                       {cat.results
+                        .slice()
                         .sort((a, b) => b.vote_count - a.vote_count)
                         .map((entry) => (
                           <ResultBar key={entry.ballot_entry_id} entry={entry} maxVotes={maxVotes} />

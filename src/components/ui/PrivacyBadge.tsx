@@ -1,7 +1,11 @@
-import { Shield, X } from "lucide-react";
-import { useState } from "react";
+import { Shield, X } from 'lucide-react';
+import { useState } from 'react';
 
-function PrivacyModal({ onClose }) {
+interface PrivacyModalProps {
+  onClose: () => void;
+}
+
+function PrivacyModal({ onClose }: PrivacyModalProps) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>

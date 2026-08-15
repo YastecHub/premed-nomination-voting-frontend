@@ -1,32 +1,52 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Settings, Pencil, Trash2, Loader2, X, Check } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { getCategories, createCategory, updateCategory, deleteCategory } from "../../api/client";
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getCategories, createCategory, updateCategory, deleteCategory } from '../../api/client';
+import type { Category } from '../../types';
 
-function CategoryForm({ initial = {}, onSave, onCancel, saving }) {
-  const [form, setForm] = useState({
-    name: initial.name || "",
-    type: initial.type || "award",
-    nomination_open_at: initial.nomination_open_at ? initial.nomination_open_at.slice(0, 16) : "",
-    nomination_close_at: initial.nomination_close_at ? initial.nomination_close_at.slice(0, 16) : "",
-    voting_open_at: initial.voting_open_at ? initial.voting_open_at.slice(0, 16) : "",
-    voting_close_at: initial.voting_close_at ? initial.voting_close_at.slice(0, 16) : "",
-    nomination_force_closed: initial.nomination_force_closed || false,
-    voting_force_closed: initial.voting_force_closed || false,
+interface CategoryFormValues {
+  name: string;
+  type: 'award' | 'position';
+  nomination_open_at: string;
+  nomination_close_at: string;
+  voting_open_at: string;
+  voting_close_at: string;
+  nomination_force_closed: boolean;
+  voting_force_closed: boolean;
+}
+
+interface CategoryFormProps {
+  initial?: Partial<Category>;
+  onSave: (form: CategoryFormValues) => void;
+  onCancel: () => void;
+  saving: boolean;
+}
+
+function CategoryForm({ initial = {}, onSave, onCancel, saving }: CategoryFormProps) {
+  const [form, setForm] = useState<CategoryFormValues>({
+    name: initial.name ?? '',
+    type: initial.type ?? 'award',
+    nomination_open_at: initial.nomination_open_at ? initial.nomination_open_at.slice(0, 16) : '',
+    nomination_close_at: initial.nomination_close_at ? initial.nomination_close_at.slice(0, 16) : '',
+    voting_open_at: initial.voting_open_at ? initial.voting_open_at.slice(0, 16) : '',
+    voting_close_at: initial.voting_close_at ? initial.voting_close_at.slice(0, 16) : '',
+    nomination_force_closed: initial.nomination_force_closed ?? false,
+    voting_force_closed: initial.voting_force_closed ?? false,
   });
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = <K extends keyof CategoryFormValues>(k: K, v: CategoryFormValues[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-slate-400 mb-1">Category Name *</label>
-          <input className="input-field" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Best Mentor" />
+          <input className="input-field" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Best Mentor" />
         </div>
         <div>
           <label className="block text-xs text-slate-400 mb-1">Type *</label>
-          <select className="input-field" value={form.type} onChange={(e) => set("type", e.target.value)}>
+          <select className="input-field" value={form.type} onChange={(e) => set('type', e.target.value as 'award' | 'position')}>
             <option value="award">🏆 Award</option>
             <option value="position">👤 Position</option>
           </select>
@@ -37,15 +57,15 @@ function CategoryForm({ initial = {}, onSave, onCancel, saving }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-slate-400 mb-1">Opens</label>
-          <input type="datetime-local" className="input-field" value={form.nomination_open_at} onChange={(e) => set("nomination_open_at", e.target.value)} />
+          <input type="datetime-local" className="input-field" value={form.nomination_open_at} onChange={(e) => set('nomination_open_at', e.target.value)} />
         </div>
         <div>
           <label className="block text-xs text-slate-400 mb-1">Closes</label>
-          <input type="datetime-local" className="input-field" value={form.nomination_close_at} onChange={(e) => set("nomination_close_at", e.target.value)} />
+          <input type="datetime-local" className="input-field" value={form.nomination_close_at} onChange={(e) => set('nomination_close_at', e.target.value)} />
         </div>
       </div>
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={form.nomination_force_closed} onChange={(e) => set("nomination_force_closed", e.target.checked)} className="rounded" />
+        <input type="checkbox" checked={form.nomination_force_closed} onChange={(e) => set('nomination_force_closed', e.target.checked)} className="rounded" />
         <span className="text-xs text-slate-400">Force-close nominations immediately</span>
       </label>
 
@@ -53,15 +73,15 @@ function CategoryForm({ initial = {}, onSave, onCancel, saving }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-slate-400 mb-1">Opens</label>
-          <input type="datetime-local" className="input-field" value={form.voting_open_at} onChange={(e) => set("voting_open_at", e.target.value)} />
+          <input type="datetime-local" className="input-field" value={form.voting_open_at} onChange={(e) => set('voting_open_at', e.target.value)} />
         </div>
         <div>
           <label className="block text-xs text-slate-400 mb-1">Closes</label>
-          <input type="datetime-local" className="input-field" value={form.voting_close_at} onChange={(e) => set("voting_close_at", e.target.value)} />
+          <input type="datetime-local" className="input-field" value={form.voting_close_at} onChange={(e) => set('voting_close_at', e.target.value)} />
         </div>
       </div>
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={form.voting_force_closed} onChange={(e) => set("voting_force_closed", e.target.checked)} className="rounded" />
+        <input type="checkbox" checked={form.voting_force_closed} onChange={(e) => set('voting_force_closed', e.target.checked)} className="rounded" />
         <span className="text-xs text-slate-400">Force-close voting immediately</span>
       </label>
 
@@ -69,68 +89,76 @@ function CategoryForm({ initial = {}, onSave, onCancel, saving }) {
         <button onClick={onCancel} className="btn-ghost flex-1">Cancel</button>
         <button onClick={() => onSave(form)} disabled={!form.name.trim() || saving} className="btn-primary flex-1">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-          {saving ? "Saving…" : "Save Category"}
+          {saving ? 'Saving…' : 'Save Category'}
         </button>
       </div>
     </div>
   );
 }
 
+function toIso(val: string): string | null {
+  return val ? new Date(val).toISOString() : null;
+}
+
 export default function CategoriesAdmin() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const fetch = () => {
+  const fetchCats = () => {
     setLoading(true);
     getCategories().then((r) => setCategories(r.data)).finally(() => setLoading(false));
   };
-  useEffect(fetch, []);
+  useEffect(fetchCats, []);
 
-  const handleCreate = async (form) => {
+  const handleCreate = async (form: CategoryFormValues) => {
     setSaving(true);
     try {
       await createCategory({
         ...form,
-        nomination_open_at: form.nomination_open_at ? new Date(form.nomination_open_at).toISOString() : null,
-        nomination_close_at: form.nomination_close_at ? new Date(form.nomination_close_at).toISOString() : null,
-        voting_open_at: form.voting_open_at ? new Date(form.voting_open_at).toISOString() : null,
-        voting_close_at: form.voting_close_at ? new Date(form.voting_close_at).toISOString() : null,
+        nomination_open_at: toIso(form.nomination_open_at),
+        nomination_close_at: toIso(form.nomination_close_at),
+        voting_open_at: toIso(form.voting_open_at),
+        voting_close_at: toIso(form.voting_close_at),
       });
       setCreating(false);
-      fetch();
+      fetchCats();
     } finally { setSaving(false); }
   };
 
-  const handleUpdate = async (form) => {
+  const handleUpdate = async (form: CategoryFormValues) => {
+    if (!editing) return;
     setSaving(true);
     try {
       await updateCategory(editing.id, {
         ...form,
-        nomination_open_at: form.nomination_open_at ? new Date(form.nomination_open_at).toISOString() : null,
-        nomination_close_at: form.nomination_close_at ? new Date(form.nomination_close_at).toISOString() : null,
-        voting_open_at: form.voting_open_at ? new Date(form.voting_open_at).toISOString() : null,
-        voting_close_at: form.voting_close_at ? new Date(form.voting_close_at).toISOString() : null,
+        nomination_open_at: toIso(form.nomination_open_at),
+        nomination_close_at: toIso(form.nomination_close_at),
+        voting_open_at: toIso(form.voting_open_at),
+        voting_close_at: toIso(form.voting_close_at),
       });
       setEditing(null);
-      fetch();
+      fetchCats();
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this category? This cannot be undone if no nominations exist.")) return;
-    await deleteCategory(id).catch((e) => alert(e.response?.data?.detail || "Cannot delete"));
-    fetch();
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this category? This cannot be undone if no nominations exist.')) return;
+    await deleteCategory(id).catch((e: unknown) => {
+      const msg = e instanceof Error ? e.message : 'Cannot delete';
+      alert(msg);
+    });
+    fetchCats();
   };
 
   return (
     <div className="min-h-screen bg-navy-950">
       <nav className="sticky top-0 z-30 bg-navy-900/80 backdrop-blur-md border-b border-white/5 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/admin")} className="btn-ghost p-1.5"><ArrowLeft size={16} /></button>
+          <button onClick={() => void navigate('/admin')} className="btn-ghost p-1.5"><ArrowLeft size={16} /></button>
           <span className="font-display text-white font-semibold">Categories</span>
         </div>
       </nav>
@@ -147,7 +175,7 @@ export default function CategoriesAdmin() {
         {creating && (
           <div className="glass-card p-6 mb-6 animate-slide-up">
             <h3 className="text-sm font-semibold text-white mb-4">Create New Category</h3>
-            <CategoryForm onSave={handleCreate} onCancel={() => setCreating(false)} saving={saving} />
+            <CategoryForm onSave={(f) => void handleCreate(f)} onCancel={() => setCreating(false)} saving={saving} />
           </div>
         )}
 
@@ -160,12 +188,12 @@ export default function CategoriesAdmin() {
             {categories.map((cat) => (
               <div key={cat.id} className="glass-card p-5">
                 {editing?.id === cat.id ? (
-                  <CategoryForm initial={cat} onSave={handleUpdate} onCancel={() => setEditing(null)} saving={saving} />
+                  <CategoryForm initial={cat} onSave={(f) => void handleUpdate(f)} onCancel={() => setEditing(null)} saving={saving} />
                 ) : (
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className={cat.type === "award" ? "badge-award" : "badge-position"}>
-                        {cat.type === "award" ? "🏆 Award" : "👤 Position"}
+                      <span className={cat.type === 'award' ? 'badge-award' : 'badge-position'}>
+                        {cat.type === 'award' ? '🏆 Award' : '👤 Position'}
                       </span>
                       <div className="min-w-0">
                         <p className="font-medium text-white truncate">{cat.name}</p>
@@ -178,7 +206,7 @@ export default function CategoriesAdmin() {
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
                       <button onClick={() => setEditing(cat)} className="btn-ghost p-2"><Pencil size={14} /></button>
-                      <button onClick={() => handleDelete(cat.id)} className="btn-danger p-2"><Trash2 size={14} /></button>
+                      <button onClick={() => void handleDelete(cat.id)} className="btn-danger p-2"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 )}

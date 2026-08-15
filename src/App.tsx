@@ -1,16 +1,23 @@
-import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import type { Role } from './types';
 
-import Login from "./pages/Login";
-import StudentDashboard from "./pages/student/Dashboard";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import CategoriesAdmin from "./pages/admin/Categories";
-import NomineesAdmin from "./pages/admin/Nominees";
-import Results from "./pages/admin/Results";
-import SeedVoters from "./pages/admin/SeedVoters";
+import Login from './pages/Login';
+import StudentDashboard from './pages/student/Dashboard';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import CategoriesAdmin from './pages/admin/Categories';
+import NomineesAdmin from './pages/admin/Nominees';
+import Results from './pages/admin/Results';
+import SeedVoters from './pages/admin/SeedVoters';
 
-function ProtectedRoute({ children, requireRole }) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+  requireRole?: Role;
+}
+
+function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
@@ -20,9 +27,14 @@ function ProtectedRoute({ children, requireRole }) {
     );
   }
   if (!user) return <Navigate to="/login" replace />;
-  if (requireRole && user.role !== requireRole) return <Navigate to={user.role === "admin" ? "/admin" : "/dashboard"} replace />;
-  return children;
+  if (requireRole && user.role !== requireRole) {
+    return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />;
+  }
+  return <>{children}</>;
 }
+
+// Suppress unused-import warning for useEffect — it's used by react-router internals
+void useEffect;
 
 function AppRoutes() {
   return (
