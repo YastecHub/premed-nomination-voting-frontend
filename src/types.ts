@@ -77,6 +77,7 @@ export interface IdentityStats {
 export interface SeedResult {
   inserted: number;
   skipped: number;
+  updated: number;
   total: number;
 }
 
@@ -84,4 +85,9 @@ export interface SeedResult {
 export interface LoginResponse {
   role: Role;
   message: string;
+}
+
+export interface OtpStartResponse {
+  message: string;
+  masked_email?: string | null;
 }

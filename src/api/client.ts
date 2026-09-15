@@ -6,6 +6,7 @@ import type {
   BallotResponse,
   CategoryResult,
   IdentityStats,
+  OtpStartResponse,
   SeedResult,
 } from '../types';
 
@@ -28,7 +29,10 @@ api.interceptors.response.use(
 
 // ─── Auth ─────────────────────────────────────────────────────────────────
 export const loginStudent = (matric_number: string) =>
-  api.post<LoginResponse>('/auth/login/student', { matric_number });
+  api.post<OtpStartResponse>('/auth/login/student', { matric_number });
+
+export const verifyStudentOtp = (matric_number: string, otp: string) =>
+  api.post<LoginResponse>('/auth/login/student/verify', { matric_number, otp });
 
 export const loginAdmin = (matric_number: string, pin: string) =>
   api.post<LoginResponse>('/auth/login/admin', { matric_number, pin });
@@ -106,6 +110,14 @@ export const seedFromCsv = (formData: FormData) =>
 
 export const seedManual = (matric_numbers: string[]) =>
   api.post<SeedResult>('/identity/seed/manual', { matric_numbers });
+
+export interface ManualVoterSeed {
+  matric_number: string;
+  email?: string;
+}
+
+export const seedVotersManual = (voters: ManualVoterSeed[]) =>
+  api.post<SeedResult>('/identity/seed/manual', { voters });
 
 export const getIdentityStats = () => api.get<IdentityStats>('/identity/stats');
 

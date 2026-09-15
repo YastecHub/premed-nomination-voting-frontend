@@ -1,11 +1,34 @@
 import { useState } from 'react';
 import { ArrowLeft, Upload, Plus, Loader2, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { seedFromCsv, seedManual } from '../../api/client';
+import { seedFromCsv, seedVotersManual } from '../../api/client';
 import axios from 'axios';
 import type { SeedResult } from '../../types';
 
 type SeedTab = 'csv' | 'manual';
+
+interface ParsedVoter {
+  matric_number: string;
+  email?: string;
+}
+
+function parseManualVoters(input: string): ParsedVoter[] {
+  return input
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [matric, email] = line.split(',').map((part) => part.trim());
+      return { matric_number: matric, email: email || undefined };
+    })
+    .filter((record) => record.matric_number);
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+  return axios.isAxiosError(err)
+    ? (err.response?.data as { detail?: string })?.detail ?? fallback
+    : fallback;
+}
 
 export default function SeedVoters() {
   const navigate = useNavigate();
@@ -19,7 +42,9 @@ export default function SeedVoters() {
   const handleCsv = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
-    setLoading(true); setError(''); setResult(null);
+    setLoading(true);
+    setError('');
+    setResult(null);
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -27,28 +52,28 @@ export default function SeedVoters() {
       setResult(res.data);
       setFile(null);
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data as { detail?: string })?.detail ?? 'Upload failed'
-        : 'Upload failed';
-      setError(msg);
-    } finally { setLoading(false); }
+      setError(errorMessage(err, 'Upload failed'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleManual = async (e: React.FormEvent) => {
     e.preventDefault();
-    const list = manual.split(/[\n,]+/).map((m) => m.trim()).filter(Boolean);
-    if (list.length === 0) return;
-    setLoading(true); setError(''); setResult(null);
+    const voters = parseManualVoters(manual);
+    if (voters.length === 0) return;
+    setLoading(true);
+    setError('');
+    setResult(null);
     try {
-      const res = await seedManual(list);
+      const res = await seedVotersManual(voters);
       setResult(res.data);
       setManual('');
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data as { detail?: string })?.detail ?? 'Upload failed'
-        : 'Upload failed';
-      setError(msg);
-    } finally { setLoading(false); }
+      setError(errorMessage(err, 'Upload failed'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const triggerFileInput = () => {
@@ -68,11 +93,10 @@ export default function SeedVoters() {
         <div className="mb-6">
           <h1 className="font-display text-xl text-white">Add Eligible Voters</h1>
           <p className="text-slate-400 text-sm mt-1">
-            Matric numbers are hashed immediately and never stored in plaintext.
+            Register each matric with its email so OTP login can prove identity.
           </p>
         </div>
 
-        {/* Tab */}
         <div className="flex rounded-xl bg-navy-900/60 p-1 mb-6 max-w-xs">
           <button
             onClick={() => setTab('csv')}
@@ -99,7 +123,7 @@ export default function SeedVoters() {
                 <p className="text-slate-400 text-sm">
                   {file ? file.name : 'Click to select CSV file'}
                 </p>
-                <p className="text-slate-600 text-xs mt-1">One matric number per row</p>
+                <p className="text-slate-600 text-xs mt-1">Headers: matric_number,email</p>
                 <input
                   id="csv-file-input"
                   type="file"
@@ -110,47 +134,53 @@ export default function SeedVoters() {
               </div>
               <button type="submit" disabled={!file || loading} className="btn-primary w-full">
                 {loading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                {loading ? 'Uploading…' : 'Upload & Hash'}
+                {loading ? 'Uploading...' : 'Upload & Register'}
               </button>
             </form>
           ) : (
             <form onSubmit={(e) => void handleManual(e)} className="space-y-4">
               <div>
                 <label className="block text-xs text-slate-400 mb-2">
-                  Matric Numbers (one per line or comma-separated)
+                  Voters, one per line
                 </label>
                 <textarea
-                  className="input-field resize-none h-40 font-mono text-xs"
+                  className="input-field resize-none h-44 font-mono text-xs"
                   value={manual}
                   onChange={(e) => setManual(e.target.value)}
-                  placeholder={'19/MED01/001\n19/MED01/002\n19/MED01/003'}
+                  placeholder={'19/MED01/001, student1@example.com\n19/MED01/002, student2@example.com'}
                 />
+                <p className="text-xs text-slate-500 mt-2">
+                  Format: matric_number,email. Email is required for OTP login.
+                </p>
               </div>
               <button type="submit" disabled={!manual.trim() || loading} className="btn-primary w-full">
                 {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                {loading ? 'Processing…' : 'Add Voters'}
+                {loading ? 'Processing...' : 'Add Voters'}
               </button>
             </form>
           )}
 
-          {/* Result */}
           {result && (
             <div className="mt-4 glass-card p-4 border-teal-500/30 animate-slide-up">
               <div className="flex items-center gap-2 text-teal-400 font-semibold text-sm mb-2">
                 <Check size={16} /> Done
               </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="grid grid-cols-4 gap-3 text-center">
                 <div>
                   <p className="text-xl font-bold text-white">{result.inserted}</p>
                   <p className="text-xs text-slate-500">Added</p>
                 </div>
                 <div>
                   <p className="text-xl font-bold text-slate-400">{result.skipped}</p>
-                  <p className="text-xs text-slate-500">Already Existed</p>
+                  <p className="text-xs text-slate-500">Existed</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-white">{result.updated}</p>
+                  <p className="text-xs text-slate-500">Emails Updated</p>
                 </div>
                 <div>
                   <p className="text-xl font-bold text-white">{result.total}</p>
-                  <p className="text-xs text-slate-500">Total Processed</p>
+                  <p className="text-xs text-slate-500">Processed</p>
                 </div>
               </div>
             </div>
